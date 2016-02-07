@@ -1,0 +1,59 @@
+Generate a Private Key
+openssl genrsa -des3 -out server.key 1024
+
+openssl genrsa -des3 -out "c:\temp\private.pem" 2048
+koitoer
+
+
+openssl req -new -key "c:\temp\private.pem" -out "c:\temp\private.csr"
+
+
+Generate a CSR (Certificate Signing Request)
+openssl req -new -key server.key -out server.csr
+openssl req -new -key server.key -out server.csr -config openssl.cnf
+password
+
+
+openssl x509 -req -days 365 -in "c:\temp\private.csr" -signkey "c:\temp\private.pem" -out "c:\temp\private.x509"
+
+//http://www.reindel.com/asymmetric-public-key-encryption-using-rsa-java-openssl/
+//http://compgroups.net/comp.lang.java.security/encrypt-decrypt-string-with-rsa-and-x/32727
+//http://www.akadia.com/services/ssh_test_certificate.html
+
+##Create RSA key protected by 3des
+openssl genrsa -des3 -out "c:\temp\private.pem" 1024
+##Create Public key in DER format
+openssl rsa -in "c:\temp\private.pem" -inform pem -out "c:\temp\public.key" -outform der -pubout
+##Create Private key in PKCS#8 public-key cryptography standard.
+openssl rsa -in "c:\temp\private.pem" -inform pem -out "c:\temp\private.key" -outform der
+##Generate a CSR (Certificate Signing Request)
+openssl req -new -key "c:\temp\private.pem" -out "c:\temp\public.csr" -config C:\Users\mauricio.mena\Downloads\openssl-0.9.8h-1-bin\openssl.cnf
+##Generate x509 certificate
+openssl x509 -req -days 365 -in "c:\temp\public.csr" -signkey "c:\temp\private.pem" -out "c:\temp\public.crt"
+##Import x509 certificate to truststore
+keytool -import -alias koitoercert -file "c:\temp\public.crt" -keystore "C:\Program Files\Java\jdk1.7.0_45\jre\lib\security\cacerts"
+##Obtain pem from the private key
+##openssl pkcs8 -inform der -nocrypt &lt; "c:\temp\private.key" &gt; "c:\temp\private.pem"
+
+##Convert pem to format exportable to the key store
+openssl pkcs8 -topk8 -nocrypt -in "c:\temp\private.pem" -inform PEM -out "c:\temp\private.der" -outform DER
+##Install previous key and cert in the keystore (NOT WORKING)
+openssl pkcs12 -export -in "c:\temp\public.crt" -inkey "c:\temp\private.key" -out server.p12 -name koitoercert -CAfile koitoer.crt -caname root
+openssl pkcs12 -export -in "c:\temp\public.crt" -inkey "c:\temp\private.pem" -out "c:\temp\private.p12"  -name koitoercert -no-CAfile -caname root
+##Install
+keytool -importkeystore -deststorepass changeit -destkeypass changeit -destkeystore "c:\temp\keystore.jks" -srckeystore cert-and-key.p12 -srcstoretype PKCS12 -srcstorepass  "c:\temp\private.key" -alias koitoercert
+
+##Generate a  Key Pair
+keytool -genkey -keyalg RSA -keysize 2048 -keystore "c:\temp\keystore.jks" -alias widgets -storepass changeit -keypass changeit -dname "CN=Wile E. Coyote, OU=Information Technology, O=ACME Corporation, L=Los Angeles, S=California, C=US"
+##Export x.509 certificates
+##-exportcert = export certificates.
+keytool -exportcert -alias widgets -keypass changeit -keystore "c:\temp\keystore.jks" -storepass changeit -file "c:\temp\acme.cer"
+##Import x509 cerificate
+keytool -import -alias ACME -file "c:\temp\acme.cer" -keystore "C:\Program Files\Java\jdk1.7.0_45\jre\lib\security\cacerts"
+
+
+
+First, I took the certificate and key in PEM format and, using openssl, I built a PKCS12 file:
+openssl pkcs12 -export -in [my_certificate.crt] -inkey [my_key.key] -out [keystore.p12] -name [new_alias] -CAfile [my_ca_bundle.crt] -caname root
+Then, I used the command explained by Graham in this message:
+keytool -importkeystore -deststorepass [new_keystore_pass] -destkeypass [new_key_pass] -destkeystore [keystore.jks] -srckeystore [keystore.p12] -srcstoretype PKCS12 -srcstorepass [pass_used_in_p12_keystore] -alias [alias_used_in_p12_keystore]
